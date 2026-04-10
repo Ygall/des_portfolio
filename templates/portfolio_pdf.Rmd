@@ -1,0 +1,240 @@
+---
+title: "e-Portfolio DES Santé Publique"
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: pdflatex
+geometry: "a4paper, margin=2cm, top=2.5cm, bottom=2.5cm"
+header-includes:
+  - \usepackage[T1]{fontenc}
+  - \usepackage[utf8]{inputenc}
+  - \usepackage[french]{babel}
+  - \usepackage{xcolor}
+  - \usepackage{fancyhdr}
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{hyperref}
+  - \definecolor{desblue}{RGB}{26,42,74}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \fancyhead[L]{\small\textcolor{desblue}{\textbf{e-Portfolio DES Sant\'e Publique}}}
+  - \fancyhead[R]{\small\textcolor{gray}{R\'ef\'erentiel 2016}}
+  - \fancyfoot[C]{\small\thepage}
+  - \renewcommand{\headrulewidth}{0.4pt}
+params:
+  user_info: NULL
+  sections: !r c("identite","contrat","connaissances","competences","stages","phases")
+  id_data: NULL
+  diplomes: NULL
+  contrat: NULL
+  eval_conn: NULL
+  eval_comp: NULL
+  stages: NULL
+  phases: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Helpers locaux — aucun accès DB
+label_conn <- function(s) {
+  if (is.null(s) || is.na(s) || identical(s, "")) return("--")
+  switch(s,
+    non_evalue = "Non evalue", non_acquis = "Non acquis", acquis = "Acquis", "--")
+}
+label_comp <- function(s) {
+  if (is.null(s) || is.na(s) || identical(s, "")) return("--")
+  switch(s,
+    non_evalue = "Non evalue", non_acquis = "Non acquis",
+    en_cours = "En cours", acquis = "Acquis", "--")
+}
+
+nn <- function(x) {
+  if (is.null(x) || (length(x)==1 && (is.na(x) || identical(x,"")))) return("--")
+  x
+}
+```
+
+\newpage
+
+# Informations generales
+
+**Interne :** `r if(!is.null(params$user_info)) paste(params$user_info$prenom, params$user_info$nom) else "--"`
+
+**Document genere le :** `r format(Sys.time(), "%d/%m/%Y a %H:%M")`
+
+---
+
+```{r identite, eval=("identite" %in% params$sections), results='asis'}
+cat("# Fiche d'identite\n\n")
+id <- params$id_data
+if (!is.null(id) && nrow(id) > 0) {
+  cat(paste0("**Nom :** ",                nn(id$nom[1]),             "  \n"))
+  cat(paste0("**Prenom :** ",             nn(id$prenom[1]),          "  \n"))
+  cat(paste0("**Date de naissance :** ",  nn(id$date_naissance[1]),  "  \n"))
+  cat(paste0("**Faculte 2eme cycle :** ", nn(id$faculte_2e_cycle[1]),"  \n"))
+  cat(paste0("**Annee ECN/EDN :** ",      nn(id$annee_edn[1]),       "  \n"))
+  cat(paste0("**DES initial :** ",        nn(id$des_initial[1]),     "  \n"))
+  cat(paste0("**Faculte 3eme cycle :** ", nn(id$faculte_3e_cycle[1]),"  \n\n"))
+}
+
+dip <- params$diplomes
+if (!is.null(dip) && nrow(dip) > 0) {
+  cat("## Diplomes\n\n")
+  tbl <- data.frame(
+    Type       = dip$type_diplome,
+    Intitule   = sapply(dip$intitule,   nn),
+    Universite = sapply(dip$universite, nn),
+    Annee      = sapply(dip$annee,      nn),
+    stringsAsFactors = FALSE
+  )
+  print(knitr::kable(tbl, format = "latex", booktabs = TRUE, linesep = ""))
+  cat("\n\n")
+}
+```
+
+\newpage
+
+```{r contrat, eval=("contrat" %in% params$sections), results='asis'}
+cat("# Contrat de formation\n\n")
+cf <- params$contrat
+if (!is.null(cf) && nrow(cf) > 0) {
+  cat("## Projet professionnel\n\n")
+  cat(nn(cf$projet_professionnel[1]), "\n\n")
+
+  cat("## These de medecine\n\n")
+  statut_lbl <- switch(nn(cf$these_statut[1]),
+    non_debutee    = "Non debutee",
+    sujet_en_cours = "Sujet en cours",
+    sujet_valide   = "Sujet valide",
+    en_cours       = "En cours de realisation",
+    validee        = "Validee",
+    "--"
+  )
+  cat(paste0("**Statut :** ",    statut_lbl,                   "  \n"))
+  cat(paste0("**Sujet :** ",     nn(cf$these_sujet[1]),        "  \n"))
+  cat(paste0("**Directeur :** ", nn(cf$these_directeur[1]),    "  \n"))
+  cat(paste0("**Soutenance :** ",nn(cf$these_date[1]),         "  \n\n"))
+
+  cat("## Objectifs - Connaissances\n\n")
+  cat(nn(cf$obj_connaissances[1]), "\n\n")
+  cat("## Objectifs - Competences\n\n")
+  cat(nn(cf$obj_competences[1]), "\n\n")
+}
+```
+
+\newpage
+
+```{r connaissances, eval=("connaissances" %in% params$sections), results='asis'}
+cat("# Portfolio de connaissances\n\n")
+dc <- params$eval_conn
+if (!is.null(dc) && nrow(dc) > 0) {
+  n_acq <- sum(dc$autoeval == "acquis", na.rm = TRUE)
+  n_tot <- nrow(dc)
+  cat(sprintf("**Progression : %d / %d acquis (%.1f%%)**\n\n",
+              n_acq, n_tot, 100 * n_acq / n_tot))
+
+  for (dom in unique(dc$domaine)) {
+    sub_d <- dc[dc$domaine == dom, ]
+    n_d   <- sum(sub_d$autoeval == "acquis", na.rm = TRUE)
+    cat(sprintf("\n## %s\n\n*%d / %d acquis*\n\n",
+                gsub("[éè]","e", gsub("[àâ]","a", dom)), n_d, nrow(sub_d)))
+    tbl <- data.frame(
+      Niveau       = sub_d$niveau,
+      Connaissance = sub_d$libelle,
+      `Auto-eval`  = sapply(sub_d$autoeval, label_conn),
+      Senior       = sapply(sub_d$eval_senior, label_conn),
+      Evaluateur   = sapply(sub_d$evaluateur_senior, nn),
+      check.names  = FALSE, stringsAsFactors = FALSE
+    )
+    print(knitr::kable(tbl, format = "latex", booktabs = TRUE,
+                       longtable = TRUE, linesep = ""))
+    cat("\n\n")
+  }
+}
+```
+
+\newpage
+
+```{r competences, eval=("competences" %in% params$sections), results='asis'}
+cat("# Portfolio de competences\n\n")
+dco <- params$eval_comp
+if (!is.null(dco) && nrow(dco) > 0) {
+  n_acq <- sum(dco$autoeval %in% c("acquis","en_cours"), na.rm = TRUE)
+  n_tot <- nrow(dco)
+  cat(sprintf("**Progression : %d / %d acquis ou en cours (%.1f%%)**\n\n",
+              n_acq, n_tot, 100 * n_acq / n_tot))
+
+  for (dom in unique(dco$domaine)) {
+    sub_d <- dco[dco$domaine == dom, ]
+    cat(sprintf("\n## %s\n\n",
+                gsub("[éè]","e", gsub("[àâ]","a", dom))))
+    tbl <- data.frame(
+      Niveau      = sub_d$niveau,
+      Competence  = sub_d$libelle,
+      `Auto-eval` = sapply(sub_d$autoeval, label_comp),
+      Senior      = sapply(sub_d$eval_senior, label_comp),
+      Evaluateur  = sapply(sub_d$evaluateur_senior, nn),
+      check.names = FALSE, stringsAsFactors = FALSE
+    )
+    print(knitr::kable(tbl, format = "latex", booktabs = TRUE,
+                       longtable = TRUE, linesep = ""))
+    cat("\n\n")
+  }
+}
+```
+
+\newpage
+
+```{r stages, eval=("stages" %in% params$sections), results='asis'}
+cat("# Carnet de stages\n\n")
+ds <- params$stages
+if (!is.null(ds) && nrow(ds) > 0) {
+  tbl <- data.frame(
+    Sem.    = paste("S", ds$semestre),
+    Periode = sapply(ds$periode,           nn),
+    Lieu    = sapply(ds$lieu,              nn),
+    Resp.   = sapply(ds$responsable_stage, nn),
+    check.names = FALSE, stringsAsFactors = FALSE
+  )
+  print(knitr::kable(tbl, format = "latex", booktabs = TRUE, linesep = ""))
+}
+```
+
+\newpage
+
+```{r phases, eval=("phases" %in% params$sections), results='asis'}
+cat("# Validation des phases\n\n")
+phase_labels <- c(
+  socle             = "Phase Socle",
+  approfondissement = "Phase d'Approfondissement",
+  consolidation     = "Phase de Consolidation"
+)
+dp <- params$phases
+for (ph in c("socle","approfondissement","consolidation")) {
+  cat(sprintf("## %s\n\n", phase_labels[[ph]]))
+  row <- if (!is.null(dp) && nrow(dp) > 0) dp[dp$phase == ph, ] else data.frame()
+  if (nrow(row) > 0) {
+    avis <- switch(nn(row$avis_commission[1]),
+      valide     = "**Valide**",
+      non_valide = "**Non valide**",
+      ajourne    = "**Ajourne**",
+      "*En attente*"
+    )
+    cat(paste0("**Avis :** ",       avis,                          "  \n"))
+    cat(paste0("**Date :** ",       nn(row$date_validation[1]),    "  \n"))
+    cat(paste0("**Signataire :** ", nn(row$validateur[1]),         "  \n"))
+    if (!is.na(row$commentaire[1]) && nchar(row$commentaire[1]) > 0)
+      cat(paste0("**Commentaire :** ", row$commentaire[1], "  \n"))
+  } else {
+    cat("*En attente de validation.*  \n")
+  }
+  cat("\n\n")
+}
+```
+
+---
+*e-Portfolio DES Sante Publique -- Referentiel pedagogique 2016 (CUESP/CIMES/CLISP).*

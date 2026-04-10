@@ -1,0 +1,42 @@
+% latex_header.tex — En-tête LaTeX pour le portfolio DES SP
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{hyperref}
+
+\geometry{a4paper, margin=2cm, top=2.5cm, bottom=2.5cm}
+
+\definecolor{des_blue}{RGB}{26,42,74}
+\definecolor{des_light}{RGB}{41,128,185}
+\definecolor{acquis_green}{RGB}{39,174,96}
+\definecolor{en_cours_orange}{RGB}{243,156,18}
+\definecolor{non_acquis_red}{RGB}{231,76,60}
+
+% En-tête / pied de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{des_blue}{\textbf{e-Portfolio DES Santé Publique}}}
+\fancyhead[R]{\small\textcolor{gray}{Référentiel 2016}}
+\fancyfoot[C]{\small\textcolor{gray}{\thepage}}
+\fancyfoot[L]{\small\textcolor{gray}{Document confidentiel — usage pédagogique}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.3pt}
+\headrulecolor{des_blue}
+
+% Titres colorés
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\color{des_blue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{des_light}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{gray}}{}{0em}{}
+
+% Liens hypertexte
+\hypersetup{
+  colorlinks=true,
+  linkcolor=des_blue,
+  urlcolor=des_light
+}

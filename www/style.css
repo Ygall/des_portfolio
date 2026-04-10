@@ -1,0 +1,180 @@
+/* www/style.css — e-Portfolio DES Santé Publique */
+
+/* ── Login ──────────────────────────────────────────────────────────────── */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  background: linear-gradient(135deg, #1a2a4a 0%, #2c3e50 100%);
+  margin: -10px;
+  padding: 20px;
+}
+
+.login-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  text-align: center;
+}
+
+.login-box .form-group {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.login-box .form-control {
+  border-radius: 6px;
+  border: 1.5px solid #dde3ea;
+  font-size: 1em;
+  padding: 9px 12px;
+}
+
+.login-box .btn-primary {
+  background: #2980b9;
+  border-color: #2471a3;
+  border-radius: 6px;
+  font-size: 1em;
+  padding: 10px;
+  transition: background 0.2s;
+}
+.login-box .btn-primary:hover { background: #1a5f8a; }
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar-user-info {
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 8px;
+}
+
+.main-sidebar .sidebar .sidebar-menu > li > a {
+  font-size: 0.92em;
+  padding: 10px 15px 10px 20px;
+  transition: background 0.15s;
+}
+
+.main-sidebar .sidebar .sidebar-menu > li.active > a,
+.main-sidebar .sidebar .sidebar-menu > li > a:hover {
+  background: rgba(41,128,185,0.25);
+  border-left: 3px solid #2980b9;
+}
+
+/* ── Dashboard value boxes ───────────────────────────────────────────────── */
+.small-box {
+  border-radius: 8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.small-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+
+/* ── Boxes ──────────────────────────────────────────────────────────────── */
+.box {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.box-header {
+  border-radius: 8px 8px 0 0;
+}
+
+/* ── DataTables ─────────────────────────────────────────────────────────── */
+.dataTable thead th {
+  background: #2c3e50;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
+.dataTable tbody tr:hover {
+  background-color: #eaf4fb !important;
+  cursor: pointer;
+}
+
+.dataTable tbody tr.selected td {
+  background-color: #d6eaf8 !important;
+}
+
+/* ── Progression bars ───────────────────────────────────────────────────── */
+.progress-bar-acquis   { background-color: #27ae60; }
+.progress-bar-en_cours { background-color: #f39c12; }
+.progress-bar-non      { background-color: #e74c3c; }
+
+/* ── Alertes ────────────────────────────────────────────────────────────── */
+.alert {
+  border-radius: 6px;
+  margin-top: 10px;
+  font-size: 0.92em;
+}
+
+/* ── Formulaires ────────────────────────────────────────────────────────── */
+.form-control:focus {
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(41,128,185,0.20);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Titre de section ────────────────────────────────────────────────────── */
+h2 {
+  color: #2c3e50;
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #d5dbdb;
+}
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+.badge-acquis     { background: #27ae60; color: #fff; padding: 3px 8px; border-radius: 12px; }
+.badge-en_cours   { background: #f39c12; color: #fff; padding: 3px 8px; border-radius: 12px; }
+.badge-non_acquis { background: #e74c3c; color: #fff; padding: 3px 8px; border-radius: 12px; }
+.badge-non_evalue { background: #95a5a6; color: #fff; padding: 3px 8px; border-radius: 12px; }
+
+/* ── Sidebar user info ───────────────────────────────────────────────────── */
+.skin-blue .main-sidebar {
+  background: #1a2a4a;
+}
+.skin-blue .main-sidebar .sidebar .sidebar-menu > li > a {
+  color: #c8d6df;
+}
+.skin-blue .main-sidebar .sidebar .sidebar-menu > li.active > a {
+  color: #fff;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.skin-blue .main-header .logo {
+  background: #1a2a4a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95em;
+}
+.skin-blue .main-header .navbar {
+  background: #1e3050;
+}
+.skin-blue .main-header .logo:hover {
+  background: #16243e;
+}
+
+/* ── Export section ─────────────────────────────────────────────────────── */
+.btn-block + .btn-block {
+  margin-top: 8px;
+}
+
+/* ── Phase boxes ─────────────────────────────────────────────────────────── */
+.phase-socle           { border-left: 5px solid #2980b9; }
+.phase-approfondissement { border-left: 5px solid #17a589; }
+.phase-consolidation   { border-left: 5px solid #27ae60; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .login-box { padding: 24px 16px; }
+  h2 { font-size: 1.2em; }
+}
