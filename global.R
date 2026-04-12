@@ -66,21 +66,30 @@ if (USE_POSTGRES) {
 }
 
 # ── Helpers DB génériques (identiques SQLite/PG) ──────────────────────────────
-db_query <- function(sql, params = list()) {
-  # Convertit ? en $1,$2,... pour PostgreSQL
-  if (USE_POSTGRES && length(params) > 0) {
-    n <- 0L
-    sql <- gsub("\\?", function(...) { n <<- n + 1L; paste0("$", n) }, sql)
+.replace_placeholders <- function(sql) {
+  # Remplace chaque ? par $1, $2, ... pour PostgreSQL (sub() en boucle, R-compatible)
+  n <- 0L
+  while (grepl("?", sql, fixed = TRUE)) {
+    n <- n + 1L
+    sql <- sub("?", paste0("$", n), sql, fixed = TRUE)
   }
+  sql
+}
+
+.now_sql <- function() {
+  if (USE_POSTGRES) "NOW()" else "datetime('now')"
+}
+
+db_query <- function(sql, params = list()) {
+  sql <- gsub("datetime\\('now'\\)", .now_sql(), sql, fixed = FALSE)
+  if (USE_POSTGRES && length(params) > 0) sql <- .replace_placeholders(sql)
   con <- db_connect(); on.exit(DBI::dbDisconnect(con))
   if (length(params)) DBI::dbGetQuery(con, sql, params) else DBI::dbGetQuery(con, sql)
 }
 
 db_execute <- function(sql, params = list()) {
-  if (USE_POSTGRES && length(params) > 0) {
-    n <- 0L
-    sql <- gsub("\\?", function(...) { n <<- n + 1L; paste0("$", n) }, sql)
-  }
+  sql <- gsub("datetime\\('now'\\)", .now_sql(), sql, fixed = FALSE)
+  if (USE_POSTGRES && length(params) > 0) sql <- .replace_placeholders(sql)
   con <- db_connect(); on.exit(DBI::dbDisconnect(con))
   if (length(params)) DBI::dbExecute(con, sql, params) else DBI::dbExecute(con, sql)
 }
@@ -143,6 +152,8 @@ get_identite <- function(user_id) {
 }
 save_identite <- function(user_id, vals) {
   # vals = list(nom, prenom, date_naissance, faculte_2e_cycle, annee_edn, des_initial, faculte_3e_cycle)
+  nom    <- vals[[1]] %||% NA
+  prenom <- vals[[2]] %||% NA
   ex <- db_query("SELECT id FROM identite WHERE user_id = ?", list(user_id))
   if (nrow(ex) == 0) {
     db_execute("INSERT INTO identite (user_id,nom,prenom,date_naissance,faculte_2e_cycle,
@@ -155,6 +166,11 @@ save_identite <- function(user_id, vals) {
                 updated_at=datetime('now') WHERE user_id=?",
                c(vals, list(user_id)))
   }
+  # Synchronise aussi users.nom/prenom pour l'affichage sidebar
+  if (!is.na(nom)    && nchar(nom)    > 0)
+    db_execute("UPDATE users SET nom=?    WHERE id=?", list(nom,    user_id))
+  if (!is.na(prenom) && nchar(prenom) > 0)
+    db_execute("UPDATE users SET prenom=? WHERE id=?", list(prenom, user_id))
 }
 
 get_contrat <- function(user_id) {

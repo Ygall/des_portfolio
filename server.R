@@ -84,17 +84,17 @@ server <- function(input, output, session) {
             "border-bottom:1px solid rgba(255,255,255,0.08);",
             "margin-bottom:6px;"),
         div(style = "color:#fff; font-size:0.95em; font-weight:600; margin-bottom:2px;",
-            paste(user()$prenom, user()$nom)),
+            uiOutput("sidebar_username")),
         div(style = "color:#7fb3c8; font-size:0.8em; margin-bottom:8px;",
             toupper(role)),
         actionButton("btn_logout",
                      label = span(icon("right-from-bracket"), " Déconnexion"),
-                     class = "btn btn-block btn-xs",
                      style = paste0(
-                       "background:rgba(231,76,60,0.15);",
-                       "color:#e74c3c;",
-                       "border:1px solid rgba(231,76,60,0.35);",
-                       "font-size:0.82em; padding:4px 8px;"))
+                       "display:block; width:100%; box-sizing:border-box;",
+                       "background:#c0392b; color:#fff;",
+                       "border:none; border-radius:4px;",
+                       "font-size:0.82em; padding:5px 8px;",
+                       "cursor:pointer; text-align:center;"))
       ),
 
       # Sélecteur interne
@@ -106,6 +106,16 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$btn_logout, { user(NULL); session$reload() })
+
+  # Nom affiché dans la sidebar — réactif après save_identite (qui sync users)
+  output$sidebar_username <- renderUI({
+    req(user())
+    row <- db_query("SELECT nom, prenom FROM users WHERE id = ?", list(user()$id))
+    if (nrow(row) > 0)
+      paste(row$prenom[1] %||% "", row$nom[1] %||% "")
+    else
+      paste(user()$prenom, user()$nom)
+  })
 
   # ── Sélecteur interne (sidebar) ──────────────────────────────────────────────
   output$sidebar_interne_selector <- renderUI({
