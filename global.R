@@ -94,6 +94,25 @@ db_execute <- function(sql, params = list()) {
   if (length(params)) DBI::dbExecute(con, sql, params) else DBI::dbExecute(con, sql)
 }
 
+# ── Alias courts des domaines (pour graphiques) ──────────────────────────────
+DOMAINE_ALIAS <- c(
+  "1 - Biostatistiques"                                                          = "Biostat.",
+  "2 - Épidémiologie et méthodes en recherche clinique"                          = "Épidémio.",
+  "3 - Informatique biomédicale et e-santé"                                      = "Info. médicale",
+  "4 - Gestion de la qualité, des risques et de la sécurité des soins"           = "Qualité/Risques",
+  "5 -  Économie, administration des services de santé, politiques de santé"     = "Économie santé",
+  "6 - Sciences humaines et sociales"                                             = "SHS",
+  "7 - Environnement et santé"                                                    = "Environnement",
+  "8 - Promotion de la santé"                                                     = "Promo. santé",
+  "Connaissances et compétences transversales"                                    = "Transversal"
+)
+
+# Convertit un vecteur de noms de domaines en alias courts
+.domaine_alias <- function(x) {
+  res <- DOMAINE_ALIAS[x]
+  ifelse(is.na(res), sub("^\\d+ -+\\s*", "", x), res)
+}
+
 # ── Constantes UI ─────────────────────────────────────────────────────────────
 STATUT_CONN_CHOICES <- c(
   "Non évalué"  = "non_evalue",

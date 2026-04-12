@@ -1,7 +1,6 @@
 # modules/mod_stages.R — Carnet de stages
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Génère les choix de période pour un semestre (Mai/Novembre depuis 2020)
 .periodes_semestre <- function() {
   annees <- seq(2018, as.integer(format(Sys.Date(), "%Y")) + 2)
   choices <- unlist(lapply(annees, function(a)
@@ -16,15 +15,20 @@ mod_stages_ui <- function(id) {
       box(title = "Carnet de stages", width = 12, status = "primary", solidHeader = TRUE,
         DTOutput(ns("tbl_stages")),
         br(),
-        actionButton(ns("btn_add"), "+ Ajouter un semestre supplémentaire",
-                     class = "btn-default btn-sm", icon = icon("plus"))
+        fluidRow(
+          column(6,
+            actionButton(ns("btn_add"), "+ Ajouter un semestre supplémentaire",
+                         class = "btn-default btn-sm", icon = icon("plus"))),
+          column(6,
+            actionButton(ns("btn_del_last"), "Supprimer le dernier semestre",
+                         class = "btn-danger btn-sm", icon = icon("trash")))
+        )
       )
     ),
     fluidRow(
       box(title = uiOutput(ns("edit_title")), width = 12,
           status = "warning", solidHeader = TRUE,
-          uiOutput(ns("panel_edit"))
-      )
+          uiOutput(ns("panel_edit")))
     )
   )
 }
@@ -43,24 +47,48 @@ mod_stages_server <- function(id, user_id_r) {
 
     observe({ req(user_id_r()); n_extra(0L); load_data() })
 
+    # n_total : nombre total de lignes à afficher
     n_total <- reactive({
       d <- stages_data()
-      base <- if (!is.null(d) && nrow(d) > 0) max(d$semestre, na.rm = TRUE) else N_SEMESTRES_MAX
-      max(N_SEMESTRES_MAX, base) + n_extra()
+      # Nombre de semestres réellement enregistrés en DB
+      n_db <- if (!is.null(d) && nrow(d) > 0) max(d$semestre, na.rm = TRUE) else 0L
+      max(N_SEMESTRES_MAX, n_db) + n_extra()
     })
 
     observeEvent(input$btn_add, { n_extra(n_extra() + 1L) })
 
+    observeEvent(input$btn_del_last, {
+      # Ne pas descendre sous 8 semestres
+      current <- n_total()
+      if (current <= N_SEMESTRES_MAX) {
+        showNotification("Le minimum est 8 semestres.", type = "warning", duration = 2)
+        return()
+      }
+      # Si le dernier semestre a des données, supprimer en DB
+      d   <- stages_data()
+      uid <- user_id_r()
+      last_sem <- current
+      if (!is.null(d) && nrow(d) > 0 && last_sem %in% d$semestre) {
+        tryCatch(
+          db_execute("DELETE FROM stages WHERE user_id=? AND semestre=?",
+                     list(uid, last_sem)),
+          error = function(e) showNotification(e$message, type = "error")
+        )
+        load_data()
+      } else {
+        n_extra(max(0L, n_extra() - 1L))
+      }
+    })
+
     output$tbl_stages <- renderDT({
       req(stages_data())
-      nt    <- n_total()
-      d     <- stages_data()
-      full  <- merge(data.frame(semestre = seq_len(nt)), d, by = "semestre", all.x = TRUE)
-
+      nt <- n_total()
+      d  <- stages_data()
+      full <- merge(data.frame(semestre = seq_len(nt)), d, by = "semestre", all.x = TRUE)
       display <- data.frame(
         Semestre             = paste("Semestre", full$semestre),
-        Periode              = ifelse(is.na(full$periode) | full$periode == "", "—", full$periode),
-        Lieu                 = ifelse(is.na(full$lieu)    | full$lieu    == "", "—", full$lieu),
+        Periode              = ifelse(is.na(full$periode)  | full$periode  == "", "—", full$periode),
+        Lieu                 = ifelse(is.na(full$lieu)     | full$lieu     == "", "—", full$lieu),
         `Responsable de stage` = ifelse(is.na(full$responsable_stage) | full$responsable_stage == "",
                                         "—", full$responsable_stage),
         check.names = FALSE, stringsAsFactors = FALSE
@@ -81,23 +109,18 @@ mod_stages_server <- function(id, user_id_r) {
       if (is.null(sel))
         return(div(class = "text-muted", icon("hand-pointer"),
                    " Sélectionnez un semestre dans le tableau."))
-
       d    <- stages_data()
-      item <- if (!is.null(d) && nrow(d) >= sel && !is.na(d$semestre[sel])) d[sel, ] else
-        data.frame(semestre = sel, periode = "", lieu = "", responsable_stage = "",
-                   travaux_realises = "", valorisations = "", commentaire = "",
-                   stringsAsFactors = FALSE)
-
+      item <- if (!is.null(d) && nrow(d) > 0 && sel %in% d$semestre) d[d$semestre==sel,] else
+        data.frame(semestre=sel, periode="", lieu="", responsable_stage="",
+                   travaux_realises="", valorisations="", commentaire="",
+                   stringsAsFactors=FALSE)
       tagList(
         fluidRow(
           column(6,
             selectInput(ns("edit_periode"), "Période du semestre",
-                        choices  = .periodes_semestre(),
-                        selected = item$periode %||% "")
-          ),
+                        choices = .periodes_semestre(), selected = item$periode %||% "")),
           column(6,
-            textInput(ns("edit_lieu"), "Lieu du stage", value = item$lieu %||% "")
-          )
+            textInput(ns("edit_lieu"), "Lieu du stage", value = item$lieu %||% ""))
         ),
         textInput(ns("edit_resp"), "Responsable de stage",
                   value = item$responsable_stage %||% ""),
@@ -122,7 +145,7 @@ mod_stages_server <- function(id, user_id_r) {
                      input$edit_resp       %||% NA,
                      input$edit_travaux    %||% NA,
                      input$edit_valorisations %||% NA,
-                     input$edit_commentaire %||% NA)
+                     input$edit_commentaire   %||% NA)
         load_data()
         showNotification(paste("Semestre", sel, "enregistré ✓"),
                          type = "message", duration = 2)
