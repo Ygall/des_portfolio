@@ -65,14 +65,21 @@ mod_admin_server <- function(id, user) {
             br(),
             fluidRow(
               column(4, passwordInput(ns("new_pw"), "Nouveau mot de passe")),
-              column(8, style = "padding-top:25px;",
+              column(8, style = "padding-top:25px; display:flex; flex-wrap:wrap; gap:6px;",
                 actionButton(ns("btn_toggle_statut"), "Actif ↔ Internat terminé",
-                             class = "btn-default", icon = icon("graduation-cap")),
+                             class = "btn-default btn-sm", icon = icon("graduation-cap")),
+                # Coord : peut supprimer uniquement les internes
+                if (role == "coordinateur")
+                  actionButton(ns("btn_delete"), "Supprimer ce compte",
+                               class = "btn-danger btn-sm", icon = icon("user-minus"))
+                else NULL,
                 if (role == "admin") tagList(
                   actionButton(ns("btn_toggle"), "Activer / Désactiver",
-                               class = "btn-info", icon = icon("power-off")),
+                               class = "btn-info btn-sm", icon = icon("power-off")),
                   actionButton(ns("btn_reset_pw"), "Réinitialiser MDP",
-                               class = "btn-warning", icon = icon("key"))
+                               class = "btn-warning btn-sm", icon = icon("key")),
+                  actionButton(ns("btn_delete"), "Supprimer ce compte",
+                               class = "btn-danger btn-sm", icon = icon("user-minus"))
                 ) else NULL
               )
             ),
@@ -234,6 +241,65 @@ mod_admin_server <- function(id, user) {
         updateTextInput(session, "new_pw", value = "")
       }, error = function(e)
         output$msg_action <- renderUI(div(class="alert alert-danger", e$message)))
+    })
+
+    # ── Suppression de compte ──────────────────────────────────────────────────
+    observeEvent(input$btn_delete, {
+      row <- sel_user(); req(row)
+      role_cur <- user()$role
+
+      # Garde-fous
+      if (row$username == user()$username) {
+        output$msg_action <- renderUI(
+          div(class="alert alert-danger",
+              icon("exclamation-triangle"),
+              " Vous ne pouvez pas supprimer votre propre compte."))
+        return()
+      }
+      # Coord : uniquement les internes
+      if (role_cur == "coordinateur" && row$role != "interne") {
+        output$msg_action <- renderUI(
+          div(class="alert alert-danger",
+              " Un coordinateur ne peut supprimer que des comptes internes."))
+        return()
+      }
+
+      # Confirmation via showModal
+      showModal(modalDialog(
+        title = span(icon("triangle-exclamation", style="color:#e74c3c;"),
+                     " Confirmer la suppression"),
+        p("Vous allez supprimer définitivement le compte de",
+          strong(paste(row$prenom, row$nom)),
+          paste0("(", row$username, ")."),
+          "Cette action est irréversible et supprimera toutes les données associées."),
+        footer = tagList(
+          modalButton("Annuler"),
+          actionButton(ns("btn_delete_confirm"), "Supprimer définitivement",
+                       class = "btn-danger", icon = icon("trash"))
+        )
+      ))
+    })
+
+    observeEvent(input$btn_delete_confirm, {
+      removeModal()
+      row <- sel_user(); req(row)
+
+      tryCatch({
+        uid <- row$id
+        # Supprimer les données liées (ordre FK)
+        for (tbl in c("eval_connaissances","eval_competences","stages",
+                      "identite","diplomes","contrat_formation","phases_validation")) {
+          db_execute(paste0("DELETE FROM ", tbl, " WHERE user_id=?"), list(uid))
+        }
+        db_execute("DELETE FROM users WHERE id=?", list(uid))
+        users_rv(load_users())
+        output$msg_action <- renderUI(
+          div(class="alert alert-success",
+              icon("check"),
+              sprintf(" Compte '%s' supprimé.", row$username)))
+      }, error = function(e)
+        output$msg_action <- renderUI(
+          div(class="alert alert-danger", " Erreur : ", e$message)))
     })
 
     # ── Stats et maintenance (admin) ───────────────────────────────────────────

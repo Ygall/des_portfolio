@@ -53,14 +53,16 @@ server <- function(input, output, session) {
       menuItem("Compétences",           tabName = "competences",   icon = icon("star")),
       menuItem("Carnet de stages",      tabName = "stages",        icon = icon("hospital")),
       menuItem("Validation des phases", tabName = "phases",        icon = icon("graduation-cap")),
-      menuItem("Exporter",              tabName = "export",        icon = icon("download"))
+      menuItem("Exporter",              tabName = "export",        icon = icon("download")),
+      menuItem("Mot de passe",          tabName = "change_pw",     icon = icon("lock"))
     )
 
     items_coord <- list(
       menuItem("Suivi de la promotion", tabName = "promotion",     icon = icon("users")),
       menuItem("Portfolio interne",     tabName = "portfolio_int", icon = icon("folder-open")),
       menuItem("Exporter",              tabName = "export",        icon = icon("download")),
-      menuItem("Gestion internes",      tabName = "admin",         icon = icon("users-gear"))
+      menuItem("Gestion internes",      tabName = "admin",         icon = icon("users-gear")),
+      menuItem("Mot de passe",          tabName = "change_pw",     icon = icon("lock"))
     )
 
     items_admin <- list(
@@ -68,7 +70,8 @@ server <- function(input, output, session) {
       menuItem("Portfolio interne",     tabName = "portfolio_int", icon = icon("folder-open")),
       menuItem("Exporter",              tabName = "export",        icon = icon("download")),
       menuItem("Administration",        tabName = "admin",         icon = icon("gears"),
-               badgeLabel = "admin", badgeColor = "red")
+               badgeLabel = "admin", badgeColor = "red"),
+      menuItem("Mot de passe",          tabName = "change_pw",     icon = icon("lock"))
     )
 
     all_items <- switch(role,
@@ -167,7 +170,9 @@ server <- function(input, output, session) {
       tabItem("phases",        h2(icon("graduation-cap"), " Validation des phases"),
                                mod_phases_ui("phases")),
       tabItem("export",        h2(icon("download"), " Exports"),
-                               mod_export_ui("export"))
+                               mod_export_ui("export")),
+      tabItem("change_pw",     h2(icon("lock"), " Mon mot de passe"),
+                               mod_change_pw_ui("change_pw"))
     )
 
     portfolio_int_tabs <- tabsetPanel(
@@ -190,7 +195,9 @@ server <- function(input, output, session) {
       tabItem("export",        h2(icon("download"), " Exports"),
                                mod_export_ui("export_coord")),
       tabItem("admin",         h2(icon("users-gear"), " Gestion des internes"),
-                               mod_admin_ui("admin_coord"))
+                               mod_admin_ui("admin_coord")),
+      tabItem("change_pw",     h2(icon("lock"), " Mon mot de passe"),
+                               mod_change_pw_ui("change_pw_coord"))
     )
 
     tabs_admin <- list(
@@ -204,7 +211,9 @@ server <- function(input, output, session) {
       tabItem("export",        h2(icon("download"), " Exports"),
                                mod_export_ui("export_coord")),
       tabItem("admin",         h2(icon("gears"), " Administration"),
-                               mod_admin_ui("admin_full"))
+                               mod_admin_ui("admin_full")),
+      tabItem("change_pw",     h2(icon("lock"), " Mon mot de passe"),
+                               mod_change_pw_ui("change_pw_admin"))
     )
 
     all_tabs <- switch(role,
@@ -248,6 +257,7 @@ server <- function(input, output, session) {
       mod_stages_server("stages",                  user_id_r)
       mod_phases_server("phases",                  user_id_r)
       mod_export_server("export", user,            user_id_r)
+      mod_change_pw_server("change_pw", user)
     }
 
     if (role %in% c("coordinateur","admin")) {
@@ -259,9 +269,13 @@ server <- function(input, output, session) {
       mod_stages_server("stages_coord",               user_id_r)
       mod_phases_server("phases_coord",               user_id_r)
       mod_export_server("export_coord", user,         user_id_r)
+      mod_change_pw_server("change_pw_coord", user)
     }
 
     if (role == "coordinateur") mod_admin_server("admin_coord", user)
-    if (role == "admin")        mod_admin_server("admin_full",  user)
+    if (role == "admin") {
+      mod_admin_server("admin_full",  user)
+      mod_change_pw_server("change_pw_admin", user)
+    }
   })
 }

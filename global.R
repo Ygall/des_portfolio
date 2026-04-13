@@ -370,6 +370,7 @@ source("modules/mod_phases.R")
 source("modules/mod_dashboard.R")
 source("modules/mod_export.R")
 source("modules/mod_admin.R")
+source("modules/mod_change_pw.R")
 
 # ── Constantes ajoutées ────────────────────────────────────────────────────────
 EVAL_SENIOR_CHOICES <- c(
