@@ -169,49 +169,59 @@ get_all_internes <- function(include_termine = FALSE) {
 get_identite <- function(user_id) {
   db_query("SELECT * FROM identite WHERE user_id = ?", list(user_id))
 }
-save_identite <- function(user_id, vals) {
-  # vals = list(nom, prenom, date_naissance, faculte_2e_cycle, annee_edn, des_initial, faculte_3e_cycle)
-  nom    <- vals[[1]] %||% NA
-  prenom <- vals[[2]] %||% NA
+save_identite <- function(user_id, nom, prenom, date_naissance,
+                           faculte_2e_cycle, annee_edn, des_initial, faculte_3e_cycle) {
+  # nom/prenom sont la source unique : on écrit dans users ET identite
+  nom_val    <- nom    %||% NA
+  prenom_val <- prenom %||% NA
+  # Mise à jour table users (source de vérité pour nom/prenom)
+  db_execute("UPDATE users SET nom=?, prenom=? WHERE id=?",
+             list(nom_val, prenom_val, user_id))
+  # Mise à jour ou insertion identite
   ex <- db_query("SELECT id FROM identite WHERE user_id = ?", list(user_id))
   if (nrow(ex) == 0) {
-    db_execute("INSERT INTO identite (user_id,nom,prenom,date_naissance,faculte_2e_cycle,
-                annee_edn,des_initial,faculte_3e_cycle,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,datetime('now'))",
-               c(list(user_id), vals))
+    db_execute("INSERT INTO identite
+                (user_id,date_naissance,faculte_2e_cycle,annee_edn,
+                 des_initial,faculte_3e_cycle,updated_at)
+                VALUES (?,?,?,?,?,?,datetime('now'))",
+               list(user_id, date_naissance %||% NA, faculte_2e_cycle %||% NA,
+                    annee_edn %||% NA, des_initial %||% NA, faculte_3e_cycle %||% NA))
   } else {
-    db_execute("UPDATE identite SET nom=?,prenom=?,date_naissance=?,faculte_2e_cycle=?,
-                annee_edn=?,des_initial=?,faculte_3e_cycle=?,
-                updated_at=datetime('now') WHERE user_id=?",
-               c(vals, list(user_id)))
+    db_execute("UPDATE identite SET date_naissance=?,faculte_2e_cycle=?,annee_edn=?,
+                des_initial=?,faculte_3e_cycle=?,updated_at=datetime('now')
+                WHERE user_id=?",
+               list(date_naissance %||% NA, faculte_2e_cycle %||% NA, annee_edn %||% NA,
+                    des_initial %||% NA, faculte_3e_cycle %||% NA, user_id))
   }
-  # Synchronise aussi users.nom/prenom pour l'affichage sidebar
-  if (!is.na(nom)    && nchar(nom)    > 0)
-    db_execute("UPDATE users SET nom=?    WHERE id=?", list(nom,    user_id))
-  if (!is.na(prenom) && nchar(prenom) > 0)
-    db_execute("UPDATE users SET prenom=? WHERE id=?", list(prenom, user_id))
+  # Sauvegarder les diplomes via fonction séparée
+  invisible(TRUE)
 }
 
 get_contrat <- function(user_id) {
   db_query("SELECT * FROM contrat_formation WHERE user_id = ?", list(user_id))
 }
 save_contrat_full <- function(user_id, projet, obj_conn, obj_comp,
+                               formations_envisagees,
                                these_statut, these_sujet, these_directeur, these_date) {
   ex <- db_query("SELECT id FROM contrat_formation WHERE user_id = ?", list(user_id))
   if (nrow(ex) == 0) {
     db_execute("INSERT INTO contrat_formation
                 (user_id,projet_professionnel,obj_connaissances,obj_competences,
+                 formations_envisagees,
                  these_statut,these_sujet,these_directeur,these_date,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,datetime('now'))",
+                VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))",
                list(user_id, projet %||% NA, obj_conn %||% NA, obj_comp %||% NA,
+                    formations_envisagees %||% NA,
                     these_statut %||% "non_debutee", these_sujet %||% NA,
                     these_directeur %||% NA, these_date %||% NA))
   } else {
     db_execute("UPDATE contrat_formation SET
                 projet_professionnel=?,obj_connaissances=?,obj_competences=?,
+                formations_envisagees=?,
                 these_statut=?,these_sujet=?,these_directeur=?,these_date=?,
                 updated_at=datetime('now') WHERE user_id=?",
                list(projet %||% NA, obj_conn %||% NA, obj_comp %||% NA,
+                    formations_envisagees %||% NA,
                     these_statut %||% "non_debutee", these_sujet %||% NA,
                     these_directeur %||% NA, these_date %||% NA, user_id))
   }
@@ -298,19 +308,27 @@ get_stages <- function(user_id) {
 }
 
 upsert_stage <- function(user_id, semestre, periode, lieu, resp_stage,
-                          travaux, valorisations, commentaire) {
+                          travaux, valorisations, commentaire, stage_valide) {
   ex <- db_query("SELECT id FROM stages WHERE user_id=? AND semestre=?", list(user_id, semestre))
+  valide_int <- switch(stage_valide %||% "en_attente",
+    valide    = 1L,
+    non_valide = 0L,
+    en_attente = NA_integer_
+  )
   if (nrow(ex) == 0) {
     db_execute("INSERT INTO stages
-                (user_id,semestre,periode,lieu,responsable_stage,travaux_realises,valorisations,commentaire,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,datetime('now'))",
+                (user_id,semestre,periode,lieu,responsable_stage,travaux_realises,
+                 valorisations,commentaire,stage_valide,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))",
                list(user_id, semestre, periode %||% NA, lieu %||% NA,
-                    resp_stage %||% NA, travaux %||% NA, valorisations %||% NA, commentaire %||% NA))
+                    resp_stage %||% NA, travaux %||% NA, valorisations %||% NA,
+                    commentaire %||% NA, valide_int))
   } else {
     db_execute("UPDATE stages SET periode=?,lieu=?,responsable_stage=?,travaux_realises=?,
-                valorisations=?,commentaire=?,updated_at=datetime('now') WHERE user_id=? AND semestre=?",
+                valorisations=?,commentaire=?,stage_valide=?,
+                updated_at=datetime('now') WHERE user_id=? AND semestre=?",
                list(periode %||% NA, lieu %||% NA, resp_stage %||% NA, travaux %||% NA,
-                    valorisations %||% NA, commentaire %||% NA, user_id, semestre))
+                    valorisations %||% NA, commentaire %||% NA, valide_int, user_id, semestre))
   }
 }
 
