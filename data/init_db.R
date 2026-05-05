@@ -136,6 +136,7 @@ init_database <- function(db_path = "data/portfolio_des.sqlite") {
       UNIQUE(user_id, semestre)
     );")
   .add_col(con, "stages", "periode",           "TEXT")
+  .add_col(con, "stages", "stage_valide",      "INTEGER DEFAULT NULL")
   .add_col(con, "stages", "responsable_stage", "TEXT")
   .add_col(con, "stages", "travaux_realises",  "TEXT")
   .add_col(con, "stages", "valorisations",     "TEXT")
@@ -192,10 +193,11 @@ init_database <- function(db_path = "data/portfolio_des.sqlite") {
       these_date           TEXT,
       updated_at           TEXT NOT NULL DEFAULT (datetime('now'))
     );")
-  .add_col(con, "contrat_formation", "these_statut",    "TEXT DEFAULT 'non_debutee'")
-  .add_col(con, "contrat_formation", "these_sujet",     "TEXT")
-  .add_col(con, "contrat_formation", "these_directeur", "TEXT")
-  .add_col(con, "contrat_formation", "these_date",      "TEXT")
+  .add_col(con, "contrat_formation", "these_statut",           "TEXT DEFAULT 'non_debutee'")
+  .add_col(con, "contrat_formation", "these_sujet",            "TEXT")
+  .add_col(con, "contrat_formation", "these_directeur",        "TEXT")
+  .add_col(con, "contrat_formation", "these_date",             "TEXT")
+  .add_col(con, "contrat_formation", "formations_envisagees",  "TEXT")
 
   # ── phases_validation ──────────────────────────────────────────────────────
   DBI::dbExecute(con, "
@@ -329,6 +331,7 @@ init_database_pg <- function() {
       valorisations     TEXT,
       commentaire       TEXT,
       updated_at        TEXT NOT NULL DEFAULT NOW()::TEXT,
+      stage_valide      INTEGER DEFAULT NULL,
       UNIQUE(user_id, semestre)
     );")
 
@@ -371,6 +374,7 @@ init_database_pg <- function() {
       these_sujet          TEXT,
       these_directeur      TEXT,
       these_date           TEXT,
+      formations_envisagees TEXT,
       updated_at           TEXT NOT NULL DEFAULT NOW()::TEXT
     );")
 

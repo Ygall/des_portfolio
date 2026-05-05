@@ -178,3 +178,23 @@ h2 {
   .login-box { padding: 24px 16px; }
   h2 { font-size: 1.2em; }
 }
+
+/* ── Sidebar redimensionnable ─────────────────────────────────────────────── */
+.main-sidebar {
+  min-width: 180px;
+  max-width: 420px;
+  transition: none !important;
+}
+#sidebar-resizer {
+  position: fixed;
+  top: 0;
+  width: 5px;
+  height: 100vh;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 9999;
+  left: 230px;
+}
+#sidebar-resizer:hover, #sidebar-resizer.dragging {
+  background: rgba(41,128,185,0.4);
+}
